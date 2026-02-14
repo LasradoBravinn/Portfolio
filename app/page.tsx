@@ -78,7 +78,7 @@ export default function Portfolio() {
     };
   }, []);
 
-  const scrollToSection = (id) => {
+  const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
       const offset = 80;
