@@ -16,14 +16,19 @@ import {
   Check,
   Menu,
   X,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Portfolio() {
   const [activeSection, setActiveSection] = useState("home");
   const [isDark, setIsDark] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuClosing, setIsMobileMenuClosing] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [visibleSections, setVisibleSections] = useState(new Set());
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,20 +51,57 @@ export default function Portfolio() {
         return false;
       });
       if (current) setActiveSection(current);
+
+      // Intersection observer for scroll animations
+      sections.forEach((section) => {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          if (rect.top < window.innerHeight * 0.75) {
+            setVisibleSections((prev) => new Set([...prev, section]));
+          }
+        }
+      });
+    };
+
+    const handleMouseMove = (e) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("mousemove", handleMouseMove);
+    handleScroll(); // Initial check
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
   }, []);
 
-  const scrollToSection = (id: string) => {
+  const scrollToSection = (id) => {
     const element = document.getElementById(id);
     if (element) {
       const offset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
       window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+      handleMobileMenuClose();
+    }
+  };
+
+  const handleMobileMenuClose = () => {
+    setIsMobileMenuClosing(true);
+    setTimeout(() => {
       setIsMobileMenuOpen(false);
+      setIsMobileMenuClosing(false);
+    }, 300); // Match animation duration
+  };
+
+  const toggleMobileMenu = () => {
+    if (isMobileMenuOpen) {
+      handleMobileMenuClose();
+    } else {
+      setIsMobileMenuOpen(true);
     }
   };
 
@@ -121,26 +163,7 @@ export default function Portfolio() {
           scroll-behavior: smooth;
         }
 
-        .glass {
-          background: ${isDark
-          ? "rgba(10, 24, 17, 0.8)"
-          : "rgba(255, 255, 255, 0.8)"};
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid
-            ${isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(255, 255, 255, 0.8)"};
-        }
-
-        .glass-scrolled {
-          background: ${isDark
-          ? "rgba(10, 24, 17, 0.95)"
-          : "rgba(255, 255, 255, 0.95)"};
-          backdrop-filter: blur(24px);
-          -webkit-backdrop-filter: blur(24px);
-          box-shadow: ${isDark
-          ? "0 4px 24px rgba(0, 0, 0, 0.3)"
-          : "0 4px 24px rgba(0, 0, 0, 0.08)"};
-        }
+        /* Remove old glass styles - now inline in component */
 
         .card {
           background: ${isDark
@@ -148,16 +171,16 @@ export default function Portfolio() {
           : "rgba(255, 255, 255, 0.9)"};
           border: 1px solid
             ${isDark ? "rgba(52, 211, 153, 0.1)" : "rgba(34, 197, 94, 0.1)"};
-          transition: all 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .card:hover {
           border-color: ${isDark
           ? "rgba(52, 211, 153, 0.3)"
           : "rgba(34, 197, 94, 0.3)"};
-          transform: translateY(-4px);
-          box-shadow: 0 12px 40px
-            ${isDark ? "rgba(52, 211, 153, 0.1)" : "rgba(34, 197, 94, 0.15)"};
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 20px 60px
+            ${isDark ? "rgba(52, 211, 153, 0.15)" : "rgba(34, 197, 94, 0.2)"};
         }
 
         .text-gradient {
@@ -167,22 +190,10 @@ export default function Portfolio() {
           background-clip: text;
         }
 
-        .nav-indicator {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          height: 2px;
-          background: ${isDark
-          ? "linear-gradient(90deg, #34d399, #10b981)"
-          : "linear-gradient(90deg, #22c55e, #16a34a)"};
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          border-radius: 2px 2px 0 0;
-        }
-
         @keyframes fadeInUp {
           from {
             opacity: 0;
-            transform: translateY(30px);
+            transform: translateY(40px);
           }
           to {
             opacity: 1;
@@ -190,10 +201,43 @@ export default function Portfolio() {
           }
         }
 
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fadeInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes fadeInRight {
+          from {
+            opacity: 0;
+            transform: translateX(40px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
         @keyframes scaleIn {
           from {
             opacity: 0;
-            transform: scale(0.95);
+            transform: scale(0.9);
           }
           to {
             opacity: 1;
@@ -211,6 +255,19 @@ export default function Portfolio() {
           }
         }
 
+        @keyframes floatSlow {
+          0%,
+          100% {
+            transform: translateY(0px) translateX(0px);
+          }
+          33% {
+            transform: translateY(-15px) translateX(10px);
+          }
+          66% {
+            transform: translateY(-5px) translateX(-10px);
+          }
+        }
+
         @keyframes slideDown {
           from {
             opacity: 0;
@@ -222,20 +279,124 @@ export default function Portfolio() {
           }
         }
 
+        @keyframes slideUp {
+          from {
+            opacity: 1;
+            transform: translateY(0);
+          }
+          to {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+
+        @keyframes ripple {
+          0% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+
+        @keyframes slideInStagger {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
         .animate-fadeInUp {
-          animation: fadeInUp 0.6s ease-out forwards;
+          animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .animate-fadeInDown {
+          animation: fadeInDown 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .animate-fadeInLeft {
+          animation: fadeInLeft 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        .animate-fadeInRight {
+          animation: fadeInRight 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         .animate-scaleIn {
-          animation: scaleIn 0.5s ease-out forwards;
+          animation: scaleIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         .animate-float {
           animation: float 6s ease-in-out infinite;
         }
 
+        .animate-floatSlow {
+          animation: floatSlow 10s ease-in-out infinite;
+        }
+
         .animate-slideDown {
           animation: slideDown 0.3s ease-out forwards;
+        }
+
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out forwards;
+        }
+
+        .animate-fadeOut {
+          animation: fadeOut 0.3s ease-out forwards;
+        }
+
+        .animate-shimmer {
+          background: linear-gradient(
+            90deg,
+            transparent,
+            ${isDark ? "rgba(52, 211, 153, 0.1)" : "rgba(34, 197, 94, 0.1)"},
+            transparent
+          );
+          background-size: 1000px 100%;
+          animation: shimmer 3s infinite;
+        }
+
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .animate-slideInStagger {
+          animation: slideInStagger 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         .delay-100 {
@@ -250,142 +411,311 @@ export default function Portfolio() {
         .delay-400 {
           animation-delay: 0.4s;
         }
+        .delay-500 {
+          animation-delay: 0.5s;
+        }
+        .delay-600 {
+          animation-delay: 0.6s;
+        }
+        .delay-700 {
+          animation-delay: 0.7s;
+        }
+        .delay-800 {
+          animation-delay: 0.8s;
+        }
 
-        @media (max-width: 768px) {
-          .mobile-menu {
-            animation: slideDown 0.3s ease-out forwards;
-          }
+        .section-visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+
+        .section-hidden {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+
+        .hover-lift {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+          transform: translateY(-4px);
+        }
+
+        .hover-glow:hover {
+          box-shadow: 0 0 30px
+            ${isDark ? "rgba(52, 211, 153, 0.3)" : "rgba(34, 197, 94, 0.3)"};
+        }
+
+        /* Nav styles moved inline for better control */
+
+        /* Mobile menu animations handled inline */
+
+        .cursor-glow {
+          pointer-events: none;
+          position: fixed;
+          width: 500px;
+          height: 500px;
+          border-radius: 50%;
+          background: radial-gradient(
+            circle,
+            ${isDark ? "rgba(52, 211, 153, 0.08)" : "rgba(34, 197, 94, 0.05)"}
+              0%,
+            transparent 70%
+          );
+          transform: translate(-50%, -50%);
+          transition: opacity 0.3s ease;
+          z-index: 0;
+        }
+
+        .stagger-item {
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stagger-item.visible {
+          opacity: 1;
+          transform: translateY(0);
         }
       `}</style>
 
+      {/* Cursor Glow Effect */}
+      <div
+        className="cursor-glow"
+        style={{
+          left: mousePosition.x,
+          top: mousePosition.y,
+        }}
+      />
+
       {/* Animated Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-40">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl bg-emerald-500/20 animate-float" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl bg-emerald-500/20 animate-floatSlow" />
         <div
-          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl bg-green-500/20 animate-float"
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl bg-green-500/20 animate-floatSlow"
           style={{ animationDelay: "2s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 w-64 h-64 rounded-full blur-3xl bg-teal-500/10 animate-float"
+          style={{ animationDelay: "4s" }}
         />
       </div>
 
-      {/* Modern Professional Navigation */}
-      <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "glass-scrolled" : "glass"}`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            {/* Logo */}
+      {/* Modern Floating Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 pt-6">
+        <div
+          className={`max-w-7xl mx-auto transition-all duration-500 ${
+            isScrolled
+              ? isDark
+                ? "bg-[#0a1811]/80 backdrop-blur-2xl border border-emerald-500/10 shadow-2xl shadow-emerald-500/5"
+                : "bg-white/80 backdrop-blur-2xl border border-green-500/10 shadow-2xl shadow-green-500/5"
+              : isDark
+                ? "bg-[#0a1811]/40 backdrop-blur-xl border border-white/5"
+                : "bg-white/40 backdrop-blur-xl border border-slate-200/50"
+          } rounded-2xl`}
+        >
+          <div className="flex items-center justify-between h-20 px-6">
+            {/* Logo with Animated Ring */}
             <div
-              className="flex items-center gap-3 group cursor-pointer"
+              className="flex items-center gap-3 group cursor-pointer opacity-0 animate-fadeInDown delay-100 relative"
               onClick={() => scrollToSection("home")}
             >
-              <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg transition-all duration-300 ${isDark
-                  ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white group-hover:shadow-lg group-hover:shadow-emerald-500/30"
-                  : "bg-gradient-to-br from-green-600 to-emerald-600 text-white group-hover:shadow-lg group-hover:shadow-green-500/30"
+              <div className="relative">
+                {/* Animated Ring */}
+                <div
+                  className={`absolute inset-0 rounded-xl transition-all duration-500 ${
+                    isDark
+                      ? "bg-gradient-to-br from-emerald-400 to-green-500 opacity-20 group-hover:opacity-40 blur-md"
+                      : "bg-gradient-to-br from-green-500 to-emerald-500 opacity-20 group-hover:opacity-40 blur-md"
+                  } group-hover:scale-125`}
+                />
+                <div
+                  className={`relative w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg transition-all duration-300 overflow-hidden ${
+                    isDark
+                      ? "bg-gradient-to-br from-emerald-500 to-green-600 text-white"
+                      : "bg-gradient-to-br from-green-600 to-emerald-600 text-white"
                   }`}
-              >
-                BL
+                >
+                  {/* Shine Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                  <span className="relative">BL</span>
+                </div>
               </div>
-              <span
-                className={`text-lg font-semibold hidden sm:block transition-colors ${isDark ? "text-white" : "text-slate-900"}`}
-              >
-                Bravin Lasrado
-              </span>
+              <div className="hidden sm:block">
+                <div
+                  className={`text-base font-bold tracking-tight transition-colors ${
+                    isDark ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  Bravin Lasrado
+                </div>
+                <div
+                  className={`text-xs font-medium ${
+                    isDark ? "text-emerald-400/70" : "text-green-600/70"
+                  }`}
+                >
+                  Full Stack Developer
+                </div>
+              </div>
             </div>
 
-            {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center gap-2 relative">
+            {/* Desktop Navigation - Pill Style */}
+            <div
+              className={`hidden lg:flex items-center gap-1 p-1.5 rounded-xl ${
+                isDark
+                  ? "bg-white/5 border border-white/10"
+                  : "bg-slate-100/50 border border-slate-200/50"
+              }`}
+            >
               {navItems.map((item, index) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
-                  className={`relative px-4 py-2 text-sm font-medium transition-all duration-200 ${activeSection === item.toLowerCase()
-                    ? isDark
-                      ? "text-emerald-400"
-                      : "text-green-600"
-                    : isDark
-                      ? "text-slate-300 hover:text-emerald-400"
-                      : "text-slate-600 hover:text-green-600"
-                    }`}
+                  className={`relative px-5 py-2.5 text-sm font-semibold transition-all duration-300 rounded-lg opacity-0 animate-fadeInDown ${
+                    activeSection === item.toLowerCase()
+                      ? isDark
+                        ? "text-white"
+                        : "text-slate-900"
+                      : isDark
+                        ? "text-slate-400 hover:text-emerald-400"
+                        : "text-slate-600 hover:text-green-600"
+                  }`}
+                  style={{ animationDelay: `${100 + index * 50}ms` }}
                 >
-                  {item}
+                  {/* Active Background */}
                   {activeSection === item.toLowerCase() && (
-                    <span
-                      className={`absolute bottom-0 left-0 right-0 h-0.5 ${isDark ? "bg-emerald-400" : "bg-green-600"} rounded-full`}
+                    <div
+                      className={`absolute inset-0 rounded-lg transition-all duration-300 ${
+                        isDark
+                          ? "bg-gradient-to-br from-emerald-500/20 to-green-600/20 border border-emerald-500/30"
+                          : "bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30"
+                      }`}
                     />
                   )}
+                  {/* Hover Background */}
+                  <div
+                    className={`absolute inset-0 rounded-lg opacity-0 hover:opacity-100 transition-opacity duration-300 ${
+                      isDark ? "bg-white/5" : "bg-slate-200/50"
+                    }`}
+                  />
+                  <span className="relative">{item}</span>
                 </button>
               ))}
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-3">
-              {/* Theme Toggle */}
+            <div className="flex items-center gap-2 opacity-0 animate-fadeInDown delay-400">
+              {/* Theme Toggle - Refined */}
               <button
                 onClick={() => setIsDark(!isDark)}
-                className={`p-2.5 rounded-lg transition-all duration-200 ${isDark
-                  ? "text-slate-300 hover:bg-white/5 hover:text-emerald-400"
-                  : "text-slate-700 hover:bg-slate-100 hover:text-green-600"
-                  }`}
+                className={`relative p-3 rounded-xl transition-all duration-300 hover:scale-110 overflow-hidden group ${
+                  isDark
+                    ? "text-slate-300 hover:text-emerald-400"
+                    : "text-slate-600 hover:text-green-600"
+                }`}
               >
-                {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                <div
+                  className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                    isDark ? "bg-white/5" : "bg-slate-100"
+                  }`}
+                />
+                <div className="relative transition-transform duration-300 group-hover:rotate-180">
+                  {isDark ? <Sun size={20} /> : <Moon size={20} />}
+                </div>
               </button>
 
-              {/* CTA Button - Hidden on mobile */}
+              {/* CTA Button - Modern Gradient */}
               <a
                 href="mailto:bravinlasrado.dev@gmail.com"
-                className={`hidden md:flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:scale-105 ${isDark
-                  ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-lg hover:shadow-emerald-500/30"
-                  : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-lg hover:shadow-green-500/30"
-                  }`}
+                className={`hidden md:flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 relative overflow-hidden group ${
+                  isDark
+                    ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20"
+                    : "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/20"
+                }`}
               >
-                Let&apos;s Talk
+                {/* Shine Effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <span className="relative">Let's Talk</span>
+                <ArrowRight
+                  size={16}
+                  className="relative group-hover:translate-x-1 transition-transform"
+                />
               </a>
 
-              {/* Mobile Menu Button */}
+              {/* Mobile Menu Button - Enhanced */}
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`lg:hidden p-2.5 rounded-lg transition-all duration-200 ${isDark
-                  ? "text-slate-300 hover:bg-white/5"
-                  : "text-slate-700 hover:bg-slate-100"
-                  }`}
+                onClick={toggleMobileMenu}
+                className={`lg:hidden p-3 rounded-xl transition-all duration-300 relative overflow-hidden group ${
+                  isDark
+                    ? "text-slate-300 hover:text-emerald-400"
+                    : "text-slate-600 hover:text-green-600"
+                }`}
               >
-                {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+                <div
+                  className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                    isDark ? "bg-white/5" : "bg-slate-100"
+                  }`}
+                />
+                <div className="relative">
+                  {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+                </div>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile Menu - Redesigned */}
         {isMobileMenuOpen && (
           <div
-            className={`lg:hidden mobile-menu border-t ${isDark ? "border-white/10 bg-[#0a1811]/95" : "border-slate-200 bg-white/95"} backdrop-blur-xl`}
+            className={`lg:hidden mt-4 rounded-2xl overflow-hidden ${
+              isMobileMenuClosing ? "animate-slideUp" : "animate-slideDown"
+            } ${
+              isDark
+                ? "bg-[#0a1811]/95 backdrop-blur-2xl border border-emerald-500/10"
+                : "bg-white/95 backdrop-blur-2xl border border-green-500/10"
+            }`}
           >
-            <div className="px-4 py-6 space-y-2">
-              {navItems.map((item) => (
+            <div className="p-6 space-y-2">
+              {navItems.map((item, index) => (
                 <button
                   key={item}
                   onClick={() => scrollToSection(item.toLowerCase())}
-                  className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${activeSection === item.toLowerCase()
-                    ? isDark
-                      ? "bg-emerald-500/10 text-emerald-400"
-                      : "bg-green-500/10 text-green-600"
-                    : isDark
-                      ? "text-slate-300 hover:bg-white/5"
-                      : "text-slate-600 hover:bg-slate-100"
-                    }`}
+                  className={`w-full text-left px-5 py-3.5 rounded-xl font-semibold transition-all duration-300 ${
+                    isMobileMenuClosing ? "animate-fadeOut" : "animate-fadeInUp"
+                  } relative overflow-hidden group ${
+                    activeSection === item.toLowerCase()
+                      ? isDark
+                        ? "bg-gradient-to-r from-emerald-500/20 to-green-600/20 text-emerald-400 border border-emerald-500/30"
+                        : "bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-600 border border-green-500/30"
+                      : isDark
+                        ? "text-slate-300 hover:bg-white/5 border border-transparent"
+                        : "text-slate-600 hover:bg-slate-100 border border-transparent"
+                  }`}
+                  style={{
+                    animationDelay: isMobileMenuClosing
+                      ? "0ms"
+                      : `${index * 50}ms`,
+                  }}
                 >
-                  {item}
+                  <span className="relative">{item}</span>
                 </button>
               ))}
               <a
                 href="mailto:bravinlasrado.dev@gmail.com"
-                className={`flex items-center justify-center gap-2 w-full px-4 py-3 rounded-lg font-semibold text-sm transition-all duration-200 mt-4 ${isDark
-                  ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white"
-                  : "bg-gradient-to-r from-green-600 to-emerald-600 text-white"
-                  }`}
+                className={`flex items-center justify-center gap-2 w-full px-5 py-3.5 rounded-xl font-bold transition-all duration-300 mt-4 ${
+                  isMobileMenuClosing ? "animate-fadeOut" : "animate-fadeInUp"
+                } relative overflow-hidden group ${
+                  isDark
+                    ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/20"
+                    : "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/20"
+                }`}
+                style={{
+                  animationDelay: isMobileMenuClosing ? "0ms" : "300ms",
+                }}
               >
-                Let&apos;s Talk
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <span className="relative">Let's Talk</span>
               </a>
             </div>
           </div>
@@ -395,11 +725,11 @@ export default function Portfolio() {
       {/* Hero Section */}
       <section
         id="home"
-        className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-22 relative"
+        className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-27 relative"
       >
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
           <div className="order-2 md:order-1 flex flex-col items-center">
-            <div className="opacity-0 animate-fadeInUp delay-100 mb-6 w-full">
+            <div className="opacity-0 animate-fadeInLeft delay-200 mb-6 w-full">
               <h1
                 className={`text-5xl md:text-7xl font-bold mb-4 text-center ${isDark ? "text-white" : "text-slate-900"}`}
               >
@@ -410,7 +740,7 @@ export default function Portfolio() {
               </p>
             </div>
 
-            <div className="opacity-0 animate-fadeInUp delay-200 mb-10 w-full">
+            <div className="opacity-0 animate-fadeInLeft delay-300 mb-10 w-full">
               <p
                 className={`text-lg md:text-xl leading-relaxed text-center ${isDark ? "text-slate-300" : "text-slate-600"}`}
               >
@@ -421,25 +751,29 @@ export default function Portfolio() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-4 opacity-0 animate-fadeInUp delay-300 mb-10 justify-center w-full">
+            <div className="flex flex-wrap gap-4 opacity-0 animate-fadeInLeft delay-400 mb-10 justify-center w-full">
               <button
                 onClick={() => scrollToSection("projects")}
-                className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg ${isDark
+                className={`group px-8 py-4 rounded-xl font-semibold transition-all duration-300 hover:scale-105 shadow-lg hover-glow flex items-center gap-2 ${isDark
                   ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-emerald-500/30"
                   : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-green-500/30"
                   }`}
               >
                 View Projects
+                <ArrowRight
+                  size={18}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
               </button>
               <button
                 onClick={() => scrollToSection("contact")}
-                className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 border-2 ${isDark ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" : "border-green-500/30 text-green-600 hover:bg-green-50"}`}
+                className={`px-8 py-4 rounded-xl font-semibold transition-all duration-300 border-2 hover-lift ${isDark ? "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10" : "border-green-500/30 text-green-600 hover:bg-green-50"}`}
               >
                 Get in Touch
               </button>
             </div>
 
-            <div className="flex gap-6 opacity-0 animate-fadeInUp delay-400 justify-center">
+            <div className="flex gap-6 opacity-0 animate-fadeInLeft delay-500 justify-center">
               {[
                 { Icon: Github, href: "https://github.com/LasradoBravinn" },
                 {
@@ -451,7 +785,7 @@ export default function Portfolio() {
                 <a
                   key={idx}
                   href={href}
-                  className={`p-3 rounded-lg transition-all duration-200 ${isDark ? "text-slate-400 hover:text-emerald-400 hover:bg-white/5" : "text-slate-600 hover:text-green-600 hover:bg-green-50"}`}
+                  className={`p-3 rounded-lg transition-all duration-300 hover-lift hover-glow ${isDark ? "text-slate-400 hover:text-emerald-400 hover:bg-white/5" : "text-slate-600 hover:text-green-600 hover:bg-green-50"}`}
                 >
                   <Icon size={24} />
                 </a>
@@ -459,12 +793,12 @@ export default function Portfolio() {
             </div>
           </div>
 
-          <div className="flex justify-center items-center opacity-0 animate-scaleIn order-1 md:order-2 relative mt-8 md:mt-0">
+          <div className="flex justify-center items-center opacity-0 animate-scaleIn delay-300 order-1 md:order-2 relative mt-8 md:mt-0">
             <div
-              className={`absolute w-56 h-56 md:w-80 md:h-80 rounded-full ${isDark ? "bg-emerald-500/20" : "bg-green-500/10"} blur-3xl`}
+              className={`absolute w-56 h-56 md:w-80 md:h-80 rounded-full ${isDark ? "bg-emerald-500/20" : "bg-green-500/10"} blur-3xl animate-pulse`}
             ></div>
             <div
-              className={`relative w-56 h-56 md:w-80 md:h-80 rounded-full overflow-hidden border-4 ${isDark ? "border-emerald-500" : "border-green-600"} shadow-2xl`}
+              className={`relative w-56 h-56 md:w-80 md:h-80 rounded-full overflow-hidden border-4 ${isDark ? "border-emerald-500" : "border-green-600"} shadow-2xl transition-all duration-500 hover:scale-105 hover:rotate-3`}
               style={{
                 boxShadow: isDark
                   ? "0 0 60px 20px rgba(16, 185, 129, 0.3)"
@@ -474,7 +808,7 @@ export default function Portfolio() {
               <img
                 src="/profile.jpeg"
                 alt="Bravin Lasrado"
-                className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
               />
             </div>
           </div>
@@ -482,19 +816,25 @@ export default function Portfolio() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="pt-10 py-20 px-4 sm:px-6 lg:px-8 relative">
+      <section
+        id="about"
+        className={`pt-10 py-20 px-4 sm:px-6 lg:px-8 relative transition-all duration-1000 ${visibleSections.has("about") ? "section-visible" : "section-hidden"}`}
+      >
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 opacity-0 animate-fadeInUp delay-100">
             <h2
               className={`text-4xl md:text-5xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
               About Me
             </h2>
+            <div
+              className={`w-20 h-1 mx-auto mt-4 rounded-full ${isDark ? "bg-gradient-to-r from-emerald-500 to-green-600" : "bg-gradient-to-r from-green-600 to-emerald-600"}`}
+            />
           </div>
 
-          <div className="card rounded-2xl p-8 md:p-12 shadow-xl">
+          <div className="card rounded-2xl p-8 md:p-12 shadow-xl opacity-0 animate-scaleIn delay-200">
             <div className="grid md:grid-cols-2 gap-8">
-              <div>
+              <div className="opacity-0 animate-fadeInLeft delay-300">
                 <p
                   className={`text-lg leading-relaxed mb-6 ${isDark ? "text-slate-300" : "text-slate-600"}`}
                 >
@@ -522,7 +862,8 @@ export default function Portfolio() {
                 ].map(({ Icon, text }, idx) => (
                   <div
                     key={idx}
-                    className={`flex items-center gap-3 w-full p-3 sm:p-4 rounded-xl backdrop-blur-lg border ${isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-200"}`}
+                    className={`flex items-center gap-3 w-full p-3 sm:p-4 rounded-xl backdrop-blur-lg border opacity-0 animate-fadeInRight hover-lift ${isDark ? "bg-white/5 border-white/10" : "bg-white border-slate-200"}`}
+                    style={{ animationDelay: `${400 + idx * 100}ms` }}
                   >
                     <Icon
                       size={20}
@@ -539,7 +880,7 @@ export default function Portfolio() {
                 <a
                   href="/cv.jpg"
                   download="Bravin_Lasrado_Resume.jpg"
-                  className={`mt-3 w-full px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-200 backdrop-blur-lg cursor-pointer ${isDark
+                  className={`mt-3 w-full px-5 sm:px-6 py-3 sm:py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all duration-300 backdrop-blur-lg cursor-pointer opacity-0 animate-fadeInRight delay-700 hover-lift hover-glow ${isDark
                     ? "bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20"
                     : "bg-green-50 text-green-600 hover:bg-green-100"
                     }`}
@@ -554,22 +895,32 @@ export default function Portfolio() {
       </section>
 
       {/* Education Section */}
-      <section id="education" className="pt-10 py-20 px-4 sm:px-6 lg:px-8 relative">
+      <section
+        id="education"
+        className={`pt-10 py-20 px-4 sm:px-6 lg:px-8 relative transition-all duration-1000 ${visibleSections.has("education") ? "section-visible" : "section-hidden"}`}
+      >
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 opacity-0 animate-fadeInUp delay-100">
             <h2
               className={`text-4xl md:text-5xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
               Education & Certifications
             </h2>
+            <div
+              className={`w-20 h-1 mx-auto mt-4 rounded-full ${isDark ? "bg-gradient-to-r from-emerald-500 to-green-600" : "bg-gradient-to-r from-green-600 to-emerald-600"}`}
+            />
           </div>
 
           <div className="space-y-6">
             {education.map((edu, idx) => (
-              <div key={idx} className="card rounded-2xl p-8 shadow-xl">
+              <div
+                key={idx}
+                className="card rounded-2xl p-8 shadow-xl opacity-0 animate-slideInStagger"
+                style={{ animationDelay: `${200 + idx * 150}ms` }}
+              >
                 <div className="flex items-start gap-4">
                   <div
-                    className={`p-4 rounded-xl ${isDark ? "bg-emerald-500/10" : "bg-green-50"}`}
+                    className={`p-4 rounded-xl transition-all duration-300 hover-lift ${isDark ? "bg-emerald-500/10" : "bg-green-50"}`}
                   >
                     <GraduationCap
                       size={32}
@@ -592,7 +943,7 @@ export default function Portfolio() {
               </div>
             ))}
 
-            <div className="card rounded-2xl p-8 shadow-xl">
+            <div className="card rounded-2xl p-8 shadow-xl opacity-0 animate-scaleIn delay-500">
               <h3
                 className={`text-xl font-bold mb-6 ${isDark ? "text-white" : "text-slate-900"}`}
               >
@@ -602,7 +953,7 @@ export default function Portfolio() {
                 {certifications.map((cert, idx) => (
                   <div
                     key={idx}
-                    className={`p-6 rounded-xl ${isDark ? "bg-white/5" : "bg-slate-50"}`}
+                    className={`p-6 rounded-xl transition-all duration-300 hover-lift hover-glow ${isDark ? "bg-white/5" : "bg-slate-50"}`}
                   >
                     <div className="flex items-start gap-3">
                       <div
@@ -637,14 +988,20 @@ export default function Portfolio() {
       </section>
 
       {/* Projects Section */}
-      <section id="projects" className="pt-10 py-20 px-4 sm:px-6 lg:px-8 relative">
+      <section
+        id="projects"
+        className={`pt-10 py-20 px-4 sm:px-6 lg:px-8 relative transition-all duration-1000 ${visibleSections.has("projects") ? "section-visible" : "section-hidden"}`}
+      >
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 opacity-0 animate-fadeInUp delay-100">
             <h2
               className={`text-4xl md:text-5xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
               My Projects
             </h2>
+            <div
+              className={`w-20 h-1 mx-auto mt-4 rounded-full ${isDark ? "bg-gradient-to-r from-emerald-500 to-green-600" : "bg-gradient-to-r from-green-600 to-emerald-600"}`}
+            />
           </div>
         </div>
         <div className="flex justify-center px-4 sm:px-6 lg:px-8">
@@ -652,10 +1009,11 @@ export default function Portfolio() {
             {projects.map((project, idx) => (
               <div
                 key={idx}
-                className="card rounded-2xl p-6 shadow-lg w-full max-w-sm"
+                className="card rounded-2xl p-6 shadow-lg w-full max-w-sm opacity-0 animate-scaleIn group"
+                style={{ animationDelay: `${200 + idx * 150}ms` }}
               >
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${isDark ? "bg-gradient-to-br from-emerald-500 to-green-600" : "bg-gradient-to-br from-green-500 to-emerald-600"}`}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-all duration-300 group-hover:scale-110 ${isDark ? "bg-gradient-to-br from-emerald-500 to-green-600" : "bg-gradient-to-br from-green-500 to-emerald-600"}`}
                 >
                   <Code2 className="text-white" size={24} />
                 </div>
@@ -676,7 +1034,7 @@ export default function Portfolio() {
                   {project.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className={`text-xs px-3 py-1.5 rounded-full font-medium ${isDark ? "bg-white/5 text-slate-300 border border-white/10" : "bg-slate-100 text-slate-600 border border-slate-200"}`}
+                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all duration-200 hover-lift ${isDark ? "bg-white/5 text-slate-300 border border-white/10" : "bg-slate-100 text-slate-600 border border-slate-200"}`}
                     >
                       {tag}
                     </span>
@@ -686,10 +1044,13 @@ export default function Portfolio() {
                 <div className="flex gap-4">
                   <a
                     href={project.live}
-                    className={`flex items-center gap-2 font-semibold transition-all duration-200 ${isDark ? "text-emerald-400 hover:text-emerald-300" : "text-green-600 hover:text-green-500"}`}
+                    className={`flex items-center gap-2 font-semibold transition-all duration-200 hover-lift group/link ${isDark ? "text-emerald-400 hover:text-emerald-300" : "text-green-600 hover:text-green-500"}`}
                   >
                     <ExternalLink size={18} />
-                    Live
+                    <span className="relative">
+                      Live
+                      <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-current transition-all duration-300 group-hover/link:w-full" />
+                    </span>
                   </a>
                 </div>
               </div>
@@ -699,14 +1060,20 @@ export default function Portfolio() {
       </section>
 
       {/* Skills Section */}
-      <section id="skills" className="pt-10 py-20 px-4 sm:px-6 lg:px-8 relative">
+      <section
+        id="skills"
+        className={`pt-10 py-20 px-4 sm:px-6 lg:px-8 relative transition-all duration-1000 ${visibleSections.has("skills") ? "section-visible" : "section-hidden"}`}
+      >
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
+          <div className="text-center mb-12 opacity-0 animate-fadeInUp delay-100">
             <h2
               className={`text-4xl md:text-5xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
               Skills & Technologies
             </h2>
+            <div
+              className={`w-20 h-1 mx-auto mt-4 rounded-full ${isDark ? "bg-gradient-to-r from-emerald-500 to-green-600" : "bg-gradient-to-r from-green-600 to-emerald-600"}`}
+            />
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -715,10 +1082,14 @@ export default function Portfolio() {
               { Icon: Database, title: "Backend", items: skills.backend },
               { Icon: Terminal, title: "Tools", items: skills.tools },
             ].map(({ Icon, title, items }, idx) => (
-              <div key={idx} className="card rounded-2xl p-8 shadow-xl">
+              <div
+                key={idx}
+                className="card rounded-2xl p-8 shadow-xl opacity-0 animate-scaleIn"
+                style={{ animationDelay: `${200 + idx * 150}ms` }}
+              >
                 <div className="flex items-center gap-3 mb-6">
                   <div
-                    className={`p-3 rounded-xl ${isDark ? "bg-emerald-500/10" : "bg-green-50"}`}
+                    className={`p-3 rounded-xl transition-all duration-300 hover-lift ${isDark ? "bg-emerald-500/10" : "bg-green-50"}`}
                   >
                     <Icon
                       size={28}
@@ -735,7 +1106,7 @@ export default function Portfolio() {
                   {items.map((skill, i) => (
                     <span
                       key={i}
-                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 ${isDark ? "bg-white/5 text-slate-300 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-110 hover-glow cursor-default ${isDark ? "bg-white/5 text-slate-300 hover:bg-white/10" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                     >
                       {skill}
                     </span>
@@ -748,22 +1119,28 @@ export default function Portfolio() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="pt-10 py-20 px-4 sm:px-6 lg:px-8 relative">
+      <section
+        id="contact"
+        className={`pt-10 py-20 px-4 sm:px-6 lg:px-8 relative transition-all duration-1000 ${visibleSections.has("contact") ? "section-visible" : "section-hidden"}`}
+      >
         <div className="max-w-4xl mx-auto text-center">
-          <div className="mb-12">
+          <div className="mb-12 opacity-0 animate-fadeInUp delay-100">
             <h2
               className={`text-4xl md:text-5xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}
             >
-              Let&apos;s Work Together
+              Let's Work Together
             </h2>
+            <div
+              className={`w-20 h-1 mx-auto mt-4 rounded-full ${isDark ? "bg-gradient-to-r from-emerald-500 to-green-600" : "bg-gradient-to-r from-green-600 to-emerald-600"}`}
+            />
           </div>
 
-          <div className="mb-12">
+          <div className="mb-12 opacity-0 animate-fadeInUp delay-200">
             <p
               className={`text-lg md:text-xl max-w-2xl mx-auto ${isDark ? "text-slate-300" : "text-slate-600"}`}
             >
-              I&apos;m always open to discussing new projects, collaborations, and
-              opportunities. If you&apos;d like to work together or just connect,
+              I'm always open to discussing new projects, collaborations, and
+              opportunities. If you'd like to work together or just connect,
               feel free to reach out.
             </p>
           </div>
@@ -792,10 +1169,11 @@ export default function Portfolio() {
               <a
                 key={idx}
                 href={href}
-                className="card rounded-2xl p-8 shadow-lg"
+                className="card rounded-2xl p-8 shadow-lg opacity-0 animate-scaleIn group"
+                style={{ animationDelay: `${300 + idx * 100}ms` }}
               >
                 <div
-                  className={`w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center ${isDark ? "bg-emerald-500/10" : "bg-green-50"}`}
+                  className={`w-16 h-16 mx-auto mb-4 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${isDark ? "bg-emerald-500/10" : "bg-green-50"}`}
                 >
                   <Icon
                     size={32}
@@ -818,7 +1196,7 @@ export default function Portfolio() {
 
           <a
             href="mailto:bravinlasrado.dev@gmail.com"
-            className={`inline-flex items-center gap-3 px-10 py-5 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-lg ${isDark ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-emerald-500/30" : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-green-500/30"}`}
+            className={`inline-flex items-center gap-3 px-10 py-5 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 shadow-lg opacity-0 animate-fadeInUp delay-600 hover-glow ${isDark ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white hover:shadow-emerald-500/30" : "bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-green-500/30"}`}
           >
             Send Me an Email
           </a>
@@ -831,7 +1209,7 @@ export default function Portfolio() {
       >
         <div className="max-w-6xl mx-auto">
           <div
-            className={`flex flex-col md:flex-row justify-between items-center gap-4 p-6 rounded-xl ${isDark ? "bg-white/5" : "bg-white"}`}
+            className={`flex flex-col md:flex-row justify-between items-center gap-4 p-6 rounded-xl transition-all duration-300 hover-lift ${isDark ? "bg-white/5" : "bg-white"}`}
           >
             <p className={isDark ? "text-slate-400" : "text-slate-600"}>
               © 2024 Bravin Lasrado.
@@ -849,9 +1227,10 @@ export default function Portfolio() {
                 <a
                   key={idx}
                   href={href}
-                  className={`px-4 py-2 rounded-lg transition-all duration-200 ${isDark ? "text-slate-400 hover:text-emerald-400 hover:bg-white/5" : "text-slate-600 hover:text-green-600 hover:bg-slate-50"}`}
+                  className={`px-4 py-2 rounded-lg transition-all duration-300 hover-lift relative group ${isDark ? "text-slate-400 hover:text-emerald-400 hover:bg-white/5" : "text-slate-600 hover:text-green-600 hover:bg-slate-50"}`}
                 >
                   {name}
+                  <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-current transition-all duration-300 group-hover:w-full" />
                 </a>
               ))}
             </div>
